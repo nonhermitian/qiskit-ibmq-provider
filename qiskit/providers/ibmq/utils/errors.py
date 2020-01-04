@@ -17,10 +17,9 @@ import sys
 
 try:
     from theia.notifications import exception_widget
+    HAS_THEIA = True
 except ImportError:
     HAS_THEIA = False
-else:
-    HAS_THEIA = True
 
 #pylint: disable=simplifiable-if-statement
 if ('ipykernel' in sys.modules) and ('spyder' not in sys.modules):
