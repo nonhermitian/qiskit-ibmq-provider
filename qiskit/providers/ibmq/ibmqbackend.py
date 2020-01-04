@@ -37,6 +37,7 @@ from .exceptions import (IBMQBackendError, IBMQBackendValueError,
                          IBMQBackendApiError, IBMQBackendApiProtocolError)
 from .job import IBMQJob
 from .utils import update_qobj_config
+from .utils.errors import exception_handler
 
 logger = logging.getLogger(__name__)
 
@@ -113,10 +114,11 @@ class IBMQBackend(BaseBackend):
             try:
                 api_job_share_level = ApiJobShareLevel(job_share_level)
             except ValueError:
-                raise IBMQBackendValueError(
+                exception_handler(IBMQBackendValueError(
                     '"{}" is not a valid job share level. '
                     'Valid job share levels are: {}'
-                    .format(job_share_level, ', '.join(level.value for level in ApiJobShareLevel)))
+                    .format(job_share_level, ', '.join(level.value for level in ApiJobShareLevel)
+                           )))
 
         validate_qobj_against_schema(qobj)
         return self._submit_job(qobj, job_name, api_job_share_level)
@@ -158,13 +160,13 @@ class IBMQBackend(BaseBackend):
                 job_name=job_name,
                 job_share_level=job_share_level)
         except ApiError as ex:
-            raise IBMQBackendApiError('Error submitting job: {}'.format(str(ex)))
+            exception_handler(IBMQBackendApiError('Error submitting job: {}'.format(str(ex))))
 
         # Error in the job after submission:
         # Transition to the `ERROR` final state.
         if 'error' in submit_info:
-            raise IBMQBackendError(
-                'Error submitting job: {}'.format(str(submit_info['error'])))
+            exception_handler(IBMQBackendError(
+                'Error submitting job: {}'.format(str(submit_info['error']))))
 
         # Submission success.
         submit_info.update({
@@ -175,8 +177,9 @@ class IBMQBackend(BaseBackend):
         try:
             job = IBMQJob.from_dict(submit_info)
         except ModelValidationError as err:
-            raise IBMQBackendApiProtocolError('Unexpected return value from the server '
-                                              'when submitting job: {}'.format(str(err)))
+            exception_handler(IBMQBackendApiProtocolError('Unexpected return value from the server '
+                                                          'when submitting job: {}'.format(str(err))
+                                                          ))
         Publisher().publish("ibmq.job.start", job)
         return job
 
@@ -227,8 +230,8 @@ class IBMQBackend(BaseBackend):
         try:
             return BackendStatus.from_dict(api_status)
         except ValidationError as ex:
-            raise LookupError(
-                "Couldn't get backend status: {0}".format(ex))
+            exception_handler(LookupError(
+                "Couldn't get backend status: {0}".format(ex)))
 
     def defaults(self, refresh: bool = False) -> Optional[PulseDefaults]:
         """Return the pulse defaults for the backend.
@@ -333,9 +336,9 @@ class IBMQBackend(BaseBackend):
                           'The query was made on backend "{}", '
                           'but the job actually belongs to backend "{}".'
                           .format(job_id, self.name(), job_backend.name()))
-            raise IBMQBackendError('Failed to get job "{}": '
-                                   'job does not belong to backend "{}".'
-                                   .format(job_id, self.name()))
+            exception_handler(IBMQBackendError('Failed to get job "{}": '
+                                               'job does not belong to backend "{}".'
+                                               .format(job_id, self.name())))
 
         return self._provider.backends.retrieve_job(job_id)
 
@@ -438,7 +441,7 @@ class IBMQRetiredBackend(IBMQBackend):
             job_share_level: Optional[str] = None
     ) -> None:
         """Run a Qobj."""
-        raise IBMQBackendError('This backend is no longer available.')
+        exception_handler(IBMQBackendError('This backend is no longer available.'))
 
     @classmethod
     def from_name(

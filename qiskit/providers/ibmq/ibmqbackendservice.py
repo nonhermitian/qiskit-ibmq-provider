@@ -30,6 +30,7 @@ from .exceptions import (IBMQBackendValueError, IBMQBackendApiError, IBMQBackend
 from .ibmqbackend import IBMQBackend, IBMQRetiredBackend
 from .job import IBMQJob
 from .utils import to_python_identifier
+from .utils.errors import exception_handler
 
 logger = logging.getLogger(__name__)
 
@@ -171,8 +172,8 @@ class IBMQBackendService(SimpleNamespace):
             elif status == JobStatus.ERROR:
                 this_filter = {'status': {'regexp': '^ERROR'}}
             else:
-                raise IBMQBackendValueError('unrecognized value for "status" keyword '
-                                            'in job filter')
+                exception_handler(IBMQBackendValueError('unrecognized value for "status" keyword '
+                                                        'in job filter'))
             api_filter.update(this_filter)
 
         if job_name:
@@ -258,8 +259,8 @@ class IBMQBackendService(SimpleNamespace):
         try:
             job_info = self._provider._api.job_get(job_id)
         except ApiError as ex:
-            raise IBMQBackendApiError('Failed to get job "{}": {}'
-                                      .format(job_id, str(ex)))
+            exception_handler(IBMQBackendApiError('Failed to get job "{}": {}'
+                                                  .format(job_id, str(ex))))
 
         # Recreate the backend used for this job.
         backend_name = job_info.get('backend', {}).get('name', 'unknown')
@@ -278,8 +279,8 @@ class IBMQBackendService(SimpleNamespace):
         try:
             job = IBMQJob.from_dict(job_info)
         except ModelValidationError as ex:
-            raise IBMQBackendApiProtocolError(
-                'Failed to get job "{}". Invalid job data received: {}'.format(job_id, str(ex)))
+            exception_handler(IBMQBackendApiProtocolError(
+                'Failed to get job "{}". Invalid job data received: {}'.format(job_id, str(ex))))
 
         return job
 
