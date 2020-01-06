@@ -28,7 +28,7 @@ from .credentials.updater import update_credentials
 from .exceptions import (IBMQAccountError, IBMQProviderError,
                          IBMQAccountCredentialsNotFound, IBMQAccountCredentialsInvalidUrl,
                          IBMQAccountCredentialsInvalidToken, IBMQAccountMultipleCredentialsFound)
-from .utils.errors import exception_handler
+from .utils.notifications import raise_pretty, message_pretty
 
 logger = logging.getLogger(__name__)
 
@@ -77,8 +77,8 @@ class IBMQFactory:
         """
         # Check if an IBM Q Experience account is already in use.
         if self._credentials:
-            exception_handler(IBMQAccountError('An IBM Q Experience account is already '
-                                               'enabled.'))
+            raise_pretty(IBMQAccountError('An IBM Q Experience account is already '
+                                          'enabled.'))
 
         # Check the version used by these credentials.
         credentials = Credentials(token, url, **kwargs)
@@ -86,7 +86,7 @@ class IBMQFactory:
 
         # Check the URL is a valid authentication URL.
         if not version_info['new_api'] or 'api-auth' not in version_info:
-            exception_handler(IBMQAccountCredentialsInvalidUrl(
+            raise_pretty(IBMQAccountCredentialsInvalidUrl(
                 'The URL specified ({}) is not an IBM Q Experience '
                 'authentication URL'.format(credentials.url)))
 
@@ -109,7 +109,7 @@ class IBMQFactory:
             IBMQAccountCredentialsNotFound: if no account is in use in the session.
         """
         if not self._credentials:
-            exception_handler(IBMQAccountCredentialsNotFound(
+            raise_pretty(IBMQAccountCredentialsNotFound(
                 'No account is in use for this session.'))
 
         self._credentials = None
@@ -131,11 +131,11 @@ class IBMQFactory:
         credentials_list = list(discover_credentials().values())
 
         if not credentials_list:
-            exception_handler(IBMQAccountCredentialsNotFound(
+            raise_pretty(IBMQAccountCredentialsNotFound(
                 'No IBM Q Experience credentials found on disk.'))
 
         if len(credentials_list) > 1:
-            exception_handler(IBMQAccountMultipleCredentialsFound(
+            raise_pretty(IBMQAccountMultipleCredentialsFound(
                 'Multiple IBM Q Experience credentials found. ' + UPDATE_ACCOUNT_TEXT))
 
         credentials = credentials_list[0]
@@ -145,7 +145,7 @@ class IBMQFactory:
 
         # Check the URL is a valid authentication URL.
         if not version_info['new_api'] or 'api-auth' not in version_info:
-            exception_handler(IBMQAccountCredentialsInvalidUrl(
+            raise_pretty(IBMQAccountCredentialsInvalidUrl(
                 'Invalid IBM Q Experience credentials found. ' + UPDATE_ACCOUNT_TEXT))
 
         # Initialize the providers.
@@ -190,16 +190,17 @@ class IBMQFactory:
                 IBM Q Experience token.
         """
         if url != QX_AUTH_URL:
-            exception_handler(IBMQAccountCredentialsInvalidUrl(
+            raise_pretty(IBMQAccountCredentialsInvalidUrl(
                 'Invalid IBM Q Experience credentials found. ' + UPDATE_ACCOUNT_TEXT))
 
         if not token or not isinstance(token, str):
-            exception_handler(IBMQAccountCredentialsInvalidToken(
+            raise_pretty(IBMQAccountCredentialsInvalidToken(
                 'Invalid token found: "%s" %s' % (token, type(token))))
 
         credentials = Credentials(token, url, **kwargs)
 
         store_credentials(credentials, overwrite=overwrite)
+        message_pretty("IQX account information saved.", kind='success')
 
     @staticmethod
     def delete_account() -> None:
@@ -212,19 +213,20 @@ class IBMQFactory:
         """
         stored_credentials = read_credentials_from_qiskitrc()
         if not stored_credentials:
-            exception_handler(IBMQAccountCredentialsNotFound('No credentials found.'))
+            raise_pretty(IBMQAccountCredentialsNotFound('No credentials found.'))
 
         if len(stored_credentials) != 1:
-            exception_handler(IBMQAccountMultipleCredentialsFound(
+            raise_pretty(IBMQAccountMultipleCredentialsFound(
                 'Multiple credentials found. ' + UPDATE_ACCOUNT_TEXT))
 
         credentials = list(stored_credentials.values())[0]
 
         if credentials.url != QX_AUTH_URL:
-            exception_handler(IBMQAccountCredentialsInvalidUrl(
+            raise_pretty(IBMQAccountCredentialsInvalidUrl(
                 'Invalid IBM Q Experience credentials found. ' + UPDATE_ACCOUNT_TEXT))
 
         remove_credentials(credentials)
+        message_pretty("IQX account information removed.", kind='success')
 
     @staticmethod
     def stored_account() -> Dict[str, str]:
@@ -242,13 +244,13 @@ class IBMQFactory:
             return {}
 
         if len(stored_credentials) > 1:
-            exception_handler(IBMQAccountMultipleCredentialsFound(
+            raise_pretty(IBMQAccountMultipleCredentialsFound(
                 'Multiple credentials found. ' + UPDATE_ACCOUNT_TEXT))
 
         credentials = list(stored_credentials.values())[0]
 
         if credentials.url != QX_AUTH_URL:
-            exception_handler(IBMQAccountCredentialsInvalidUrl(
+            raise_pretty(IBMQAccountCredentialsInvalidUrl(
                 'Invalid IBM Q Experience credentials found. ' + UPDATE_ACCOUNT_TEXT))
 
         return {
@@ -335,10 +337,10 @@ class IBMQFactory:
         providers = self.providers(hub, group, project)
 
         if not providers:
-            exception_handler(IBMQProviderError('No provider matching the criteria'))
+            raise_pretty(IBMQProviderError('No provider matching the criteria'))
         if len(providers) > 1:
-            exception_handler(IBMQProviderError('More than one provider matching the '
-                                                'criteria'))
+            raise_pretty(IBMQProviderError('More than one provider matching the '
+                                           'criteria'))
 
         return providers[0]
 

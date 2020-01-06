@@ -37,7 +37,7 @@ from .exceptions import (IBMQBackendError, IBMQBackendValueError,
                          IBMQBackendApiError, IBMQBackendApiProtocolError)
 from .job import IBMQJob
 from .utils import update_qobj_config
-from .utils.errors import exception_handler
+from .utils.notifications import raise_pretty
 
 logger = logging.getLogger(__name__)
 
@@ -114,7 +114,7 @@ class IBMQBackend(BaseBackend):
             try:
                 api_job_share_level = ApiJobShareLevel(job_share_level)
             except ValueError:
-                exception_handler(IBMQBackendValueError(
+                raise_pretty(IBMQBackendValueError(
                     '"{}" is not a valid job share level. '
                     'Valid job share levels are: {}'
                     .format(job_share_level, ', '.join(level.value for level in ApiJobShareLevel)
@@ -160,12 +160,12 @@ class IBMQBackend(BaseBackend):
                 job_name=job_name,
                 job_share_level=job_share_level)
         except ApiError as ex:
-            exception_handler(IBMQBackendApiError('Error submitting job: {}'.format(str(ex))))
+            raise_pretty(IBMQBackendApiError('Error submitting job: {}'.format(str(ex))))
 
         # Error in the job after submission:
         # Transition to the `ERROR` final state.
         if 'error' in submit_info:
-            exception_handler(IBMQBackendError(
+            raise_pretty(IBMQBackendError(
                 'Error submitting job: {}'.format(str(submit_info['error']))))
 
         # Submission success.
@@ -177,9 +177,9 @@ class IBMQBackend(BaseBackend):
         try:
             job = IBMQJob.from_dict(submit_info)
         except ModelValidationError as err:
-            exception_handler(IBMQBackendApiProtocolError('Unexpected return value from the server '
-                                                          'when submitting job: {}'.format(str(err))
-                                                          ))
+            raise_pretty(IBMQBackendApiProtocolError('Unexpected return value from the server '
+                                                     'when submitting job: {}'.format(str(err))
+                                                    ))
         Publisher().publish("ibmq.job.start", job)
         return job
 
@@ -230,7 +230,7 @@ class IBMQBackend(BaseBackend):
         try:
             return BackendStatus.from_dict(api_status)
         except ValidationError as ex:
-            exception_handler(LookupError(
+            raise_pretty(LookupError(
                 "Couldn't get backend status: {0}".format(ex)))
 
     def defaults(self, refresh: bool = False) -> Optional[PulseDefaults]:
@@ -336,9 +336,9 @@ class IBMQBackend(BaseBackend):
                           'The query was made on backend "{}", '
                           'but the job actually belongs to backend "{}".'
                           .format(job_id, self.name(), job_backend.name()))
-            exception_handler(IBMQBackendError('Failed to get job "{}": '
-                                               'job does not belong to backend "{}".'
-                                               .format(job_id, self.name())))
+            raise_pretty(IBMQBackendError('Failed to get job "{}": '
+                                          'job does not belong to backend "{}".'
+                                          .format(job_id, self.name())))
 
         return self._provider.backends.retrieve_job(job_id)
 
@@ -441,7 +441,7 @@ class IBMQRetiredBackend(IBMQBackend):
             job_share_level: Optional[str] = None
     ) -> None:
         """Run a Qobj."""
-        exception_handler(IBMQBackendError('This backend is no longer available.'))
+        raise_pretty(IBMQBackendError('This backend is no longer available.'))
 
     @classmethod
     def from_name(

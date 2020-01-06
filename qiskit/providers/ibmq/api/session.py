@@ -190,7 +190,7 @@ class RetrySession(Session):
         """
         # pylint: disable=arguments-differ
         # pylint: disable=import-outside-toplevel
-        from ..utils.errors import exception_handler
+        from ..utils.notifications import raise_pretty
         if bare:
             final_url = url
             # Explicitly pass `None` as the `access_token` param, disabling it.
@@ -225,7 +225,7 @@ class RetrySession(Session):
                 # Modify the original message on the chained exceptions.
                 self._modify_chained_exception_messages(ex)
 
-            exception_handler(RequestsApiError(message))
+            raise_pretty(RequestsApiError(message))
 
         return response
 

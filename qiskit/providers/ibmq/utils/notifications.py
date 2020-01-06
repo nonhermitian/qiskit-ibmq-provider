@@ -14,9 +14,11 @@
 
 """Error handling routines"""
 import sys
+import warnings
 
 try:
     from theia.notifications import exception_widget
+    from theia.notifications import message_widget
     HAS_THEIA = True
 except ImportError:
     HAS_THEIA = False
@@ -27,7 +29,7 @@ if ('ipykernel' in sys.modules) and ('spyder' not in sys.modules):
 else:
     HAS_JUPYTER = False
 
-def exception_handler(err):
+def raise_pretty(err):
     """A custom handler of exceptions.
     Allows for pretty formatting of exceptions
     in Jupyter notebooks if Theia is installed.
@@ -36,3 +38,14 @@ def exception_handler(err):
         exception_widget(err)
     else:
         raise err
+
+def message_pretty(msg, kind='info', warning_kind=UserWarning):
+    """A handler for warnings and other messages
+    """
+    if HAS_JUPYTER and HAS_THEIA:
+        message_widget(msg, kind=kind, warning_kind=warning_kind)
+    else:
+        if kind == 'warning':
+            warnings.warn(msg, category=warning_kind)
+        else:
+            pass
