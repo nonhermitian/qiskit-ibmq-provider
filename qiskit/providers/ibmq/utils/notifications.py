@@ -14,7 +14,6 @@
 
 """Error handling routines"""
 import sys
-import warnings
 
 try:
     from theia.notifications import exception_widget
@@ -33,6 +32,9 @@ def raise_pretty(err):
     """A custom handler of exceptions.
     Allows for pretty formatting of exceptions
     in Jupyter notebooks if Theia is installed.
+
+    Parameters:
+        err (Exception): The input exception.
     """
     if HAS_JUPYTER and HAS_THEIA:
         exception_widget(err)
@@ -40,12 +42,17 @@ def raise_pretty(err):
         raise err
 
 def message_pretty(msg, kind='info', warning_kind=UserWarning):
-    """A handler for warnings and other messages
+    """A handler for warnings and other messages.
+
+    Parameters:
+        msg (str): Message to be displayed.
+        kind (str): Kind of message ('info', 'success', 'warning').
+        warning_kind (Warning): The type of warning if kind='warning'.
+
+    Returns
+        bool: If message was printed.
     """
     if HAS_JUPYTER and HAS_THEIA:
         message_widget(msg, kind=kind, warning_kind=warning_kind)
-    else:
-        if kind == 'warning':
-            warnings.warn(msg, category=warning_kind)
-        else:
-            pass
+        return True
+    return False

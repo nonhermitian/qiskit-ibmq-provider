@@ -96,8 +96,10 @@ class IBMQFactory:
         # Prevent edge case where no hubs are available.
         providers = self.providers()
         if not providers:
-            logger.warning('No Hub/Group/Projects could be found for this '
-                           'account.')
+            msg = 'No Hub/Group/Projects could be found for this ' + \
+                  'account.'
+            if not message_pretty(msg, kind='warning'):
+                logger.warning(msg)
             return None
 
         return providers[0]
@@ -150,9 +152,11 @@ class IBMQFactory:
 
         # Initialize the providers.
         if self._credentials:
-            # For convention, emit a warning instead of raising.
-            logger.warning('Credentials are already in use. The existing '
-                           'account in the session will be replaced.')
+            msg = 'Credentials are already in use. The existing ' + \
+                  'account in the session will be replaced.'
+            if not message_pretty(msg, kind='warning'):
+                # For convention, emit a warning instead of raising.
+                logger.warning(msg)
             self.disable_account()
 
         self._initialize_providers(credentials)
@@ -163,7 +167,8 @@ class IBMQFactory:
             logger.warning('No Hub/Group/Projects could be found for this '
                            'account.')
             return None
-
+        message_pretty("Loaded {} providers from IQX account".format(len(providers)),
+                       kind='success')
         return providers[0]
 
     @staticmethod
